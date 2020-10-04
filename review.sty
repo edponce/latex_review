@@ -1,0 +1,210 @@
+% Copyright (c) 2020 Eduardo Ponce
+%
+% Permission is granted to copy, distribute and/or modify this
+% software under the terms of the LaTeX Project Public License
+% (LPPL), version 1.3c or any later version.
+%
+% This software is provided 'as is', without warranty of any kind,
+% either expressed or implied, including, but not limited to, the
+% implied warranties of merchantability and fitness for a
+% particular purpose.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{review}[2020/10/04 v1.0 document revision for LaTeX]
+
+% TODO: add option for enable/disable reviews.
+% Revision elements (review changes, notes, and line numbers)
+\newif\ifreview
+\reviewfalse
+\DeclareOption{review}{\reviewtrue}
+
+
+\RequirePackage[titles]{tocloft}  % customize TOC, LOT, LOF
+\RequirePackage{soul}             % text highlight
+\RequirePackage[dvipsnames,svgnames,x11names,table]{xcolor}  % colors
+\RequirePackage{xargs}            % multioption commands
+\RequirePackage{xifthen}          % improved ifthenelse
+\RequirePackage[left]{lineno}     % line numbers
+% TODO: automate textwidth setting.
+\RequirePackage[textwidth=1.13in]{todonotes}  % notes
+
+
+% TODO: Change colors to underline for black and white printing.
+% TODO: Add a 'resolved/accepted' statuses.
+% TODO: Create a python/shell script or website that removes revision text from TeX file.
+% TODO: Study etoolbox, do we need \string between \csname? https://github.com/josephwright/etoolbox
+% TODO: Do not add notes to \todonotes list.
+% TODO: Study changes package, solves this problem.
+
+% Line numbers
+\ifreview%
+    \modulolinenumbers[2]%
+    \renewcommand*\linenumberfont{\color{red}\footnotesize\texttt}%
+\else%
+    \renewcommand*\linenumbers{}%
+\fi
+
+% Default note color
+\newcommand*\@defaultNoteColor{orange!60}
+% Only for \inote command:
+%   \hl from soul package does not accepts mix colors directly (e.g., orange!40)
+%   Need to create color name based on mix ratio, using colorlet from xcolor package
+\colorlet{noteColor}{\@defaultNoteColor}
+\newcommand*\@noteColor{noteColor}
+
+% Revisions (review action and notes)
+\ifreview%
+    % Make a list of revisions
+    \newcommand*\revisionname{Revision}
+    \newcommand*\listrevisionname{List of \revisionname s}
+    \newlistof{revisions}{lor}{\listrevisionname}
+    % Make lor margin same as text
+    \cftsetindents{revisions}{0pt}{\tabsize}
+    \cftpagenumbersoff{revisions}
+    \let\ListOfRevisions\listofrevisions
+    \renewcommand\listofrevisions{%
+        \newcommand*\@origtocrmarg{\@tocrmarg}%
+        \renewcommand*\@tocrmarg{0pt}%
+        \ListOfRevisions%
+        \renewcommand*\@tocrmarg{\@origcrmarg}%
+    }
+
+    % Review actions
+    \newcommand*\@reviewColor{red}
+    \newcommand*\@authorlabel{}
+    \newcommand*\notecounter{}
+    \newcounter{revision}
+
+    % Add text: \add[ID]{text}[color]
+    \newcommandx{\add}[3][1=,3=\@reviewColor]{%
+        \ifthenelse{\isempty{#1}}{%
+            \textcolor{#3}{#2}%
+            \renewcommand*\@authorlabel{}%
+        }{%
+            \textcolor{#3}{\textsuperscript{#1}#2}%
+            \renewcommand*\@authorlabel{\protect\textcolor{#3}{\bfseries [#1]}}%
+        }%
+        \refstepcounter{revision}%
+        \addcontentsline{lor}{revisions}{\protect\numberline{\therevision.}\@authorlabel~\protect\textcolor{black}{Added} (\textit{page~\thepage, line~\thelinenumber}): \protect\textcolor{\@reviewColor}{#2}}%
+    }
+
+    % Delete text: \delete[ID]{text}[color]
+    \newcommandx\delete[3][1=,3=\@reviewColor]{%
+        \ifthenelse{\isempty{#1}}{%
+            \textcolor{#3}{\st{#2}}%
+            \renewcommand*\@authorlabel{}%
+        }{%
+            \textcolor{#3}{\textsuperscript{#1}\st{#2}}%
+            \renewcommand*\@authorlabel{\protect\textcolor{#3}{\bfseries [#1]}}%
+        }%
+        \refstepcounter{revision}%
+        \addcontentsline{lor}{revisions}{\protect\numberline{\therevision.}\@authorlabel~\protect\textcolor{black}{Deleted} (\textit{page~\thepage, line~\thelinenumber}): \protect\textcolor{\@reviewColor}{\st{#2}}}%
+    }
+
+    % Replace text: \replace[ID]{original text}{new text}[color]
+    \newcommandx\replace[4][1=,4=\@reviewColor]{%
+        \ifthenelse{\isempty{#1}}{%
+            \textcolor{#4}{\st{#2} #3}%
+            \renewcommand*\@authorlabel{}%
+        }{%
+            \textcolor{#4}{\textsuperscript{#1}\st{#2}#3}%
+            \renewcommand*\@authorlabel{\protect\textcolor{#3}{\bfseries [#1]}}%
+        }%
+        \refstepcounter{revision}%
+        \addcontentsline{lor}{revisions}{\protect\numberline{\therevision.}\@authorlabel~\protect\textcolor{black}{Replaced} (\textit{page~\thepage, line~\thelinenumber}): \protect\textcolor{\@reviewColor}{\st{#2}} \protect\textcolor{black}{with} \protect\textcolor{\@reviewColor}{#3}}%
+    }
+
+    % Note macros based on 'todonotes' package
+    \setuptodonotes{color=\@noteColor,tickmarkheight=0.5em}%
+
+    % Regular note: \note[ID]{text}[color][options for \todo macro]
+    \newcommandx{\note}[4][1=,3=\@noteColor,4=]{%
+        \par\noindent%
+        \ifthenelse{\isempty{#1}}{%
+            {\setstretch{0.5}\todo[size=\footnotesize,inline,noinlinepar,nolist,color=#3,#4]{#2}}%
+            \renewcommand*\@authorlabel{}%
+        }{%
+            \@ifundefined{c@cntr#1}{\newcounter{cntr#1}}{}%
+            \renewcommand*\notecounter{cntr#1}%
+            \refstepcounter{\notecounter}%
+            {\setstretch{0.5}\todo[size=\footnotesize,inline,noinlinepar,nolist,color=#3,#4]{\textbf{#1\csname the\notecounter\endcsname:} #2}}%
+            \renewcommand*\@authorlabel{\protect\textcolor{#3}{\bfseries [#1\csname the\notecounter\endcsname]}}%
+        }%
+        \refstepcounter{revision}%
+        \addcontentsline{lor}{revisions}{\protect\numberline{\therevision.}\@authorlabel~\protect\textcolor{black}{Note} (\textit{page~\thepage, line~\thelinenumber}): \protect\textcolor{black}{#2}}%
+    }
+
+    % Inline note: \inote[ID]{text}[color]
+    \newcommandx{\inote}[3][1=,3=\@noteColor]{%
+        \ifthenelse{\isempty{#1}}{%
+            {\footnotesize\sethlcolor{#3}\hl{#2}}%
+            \renewcommand*\@authorlabel{}%
+        }{%
+            \@ifundefined{c@cntr#1}{\newcounter{cntr#1}}{}%
+            \renewcommand*\notecounter{cntr#1}%
+            \refstepcounter{\notecounter}%
+            {\footnotesize\sethlcolor{#3}\hl{{\bfseries #1\csname the\notecounter\endcsname:} #2}}%
+            \renewcommand*\@authorlabel{\protect\textcolor{#3}{\bfseries [#1\csname the\notecounter\endcsname]}}%
+        }%
+        \refstepcounter{revision}%
+        \addcontentsline{lor}{revisions}{\protect\numberline{\therevision.}\@authorlabel~\protect\textcolor{black}{Inline note} (\textit{page~\thepage, line~\thelinenumber}): \protect\textcolor{black}{#2}}%
+    }
+
+    % Margin note: \mnote[ID]{text}[color][options for \todo macro]
+    \newcommandx{\mnote}[4][1=,3=\@noteColor,4=]{%
+        \ifthenelse{\isempty{#1}}{%
+            {\setstretch{0.5}\todo[size=\scriptsize,nolist,color=#3,#4]{#2}}%
+            \renewcommand*\@authorlabel{}%
+        }{%
+            \@ifundefined{c@cntr#1}{\newcounter{cntr#1}}{}%
+            \renewcommand*\notecounter{cntr#1}%
+            \refstepcounter{\notecounter}%
+            {\setstretch{0.5}\todo[size=\scriptsize,nolist,color=#3,#4]{\textbf{#1\csname the\notecounter\endcsname:} #2}}%
+            \renewcommand*\@authorlabel{\protect\textcolor{#3}{\bfseries [#1\csname the\notecounter\endcsname]}}%
+        }%
+        \refstepcounter{revision}%
+        \addcontentsline{lor}{revisions}{\protect\numberline{\therevision.}\@authorlabel~\protect\textcolor{black}{Margin note} (\textit{page~\thepage, line~\thelinenumber}): \protect\textcolor{black}{#2}}%
+    }
+
+    % Highlight margin note: \hnote[ID]{text to highlight}{regular text}[color][options for \todo macro]
+    \newcommandx{\hnote}[5][1=,4=\@noteColor,5=]{\hl{#2}\mnote[#1]{#3}[#4][#5]}%
+
+    % Response text for notes \response[ID]{text}
+    \newcommand{\response}[2][]{%
+        \newline%
+        \ifthenelse{\isempty{#1}}{\textbf{Resp:} #2}{\textbf{#1:} #2}%
+    }
+\else%
+    \newcommand\listofrevisions{}
+    \newcommandx{\add}[3][1=,3=]{}
+    \newcommandx\delete[3][1=,3=]{#2}
+    \newcommandx\replace[4][1=,4=]{#2}
+
+    % Disable note macros
+    \setuptodonotes{disable}
+    % Warning: The use of \unskip will delete a single space before command (if available). Careful if command is placed right after an explicit space.
+    \newcommandx{\note}[4][1=,3=,4=]{\unskip}
+    \newcommandx{\inote}[3][1=,3=]{\unskip}
+    \newcommandx{\mnote}[4][1=,3=,4=]{\unskip}
+    \newcommandx{\hnote}[5][1=,4=,5=]{#2}
+    \newcommand{\response}[2][]{\unskip}
+\fi
+
+% Dynamically create commands for reviewers: \reviewer[ID]{alias}[color]
+% ID and alias should be unique (alias is necessary) (ID will only reuse counter)
+%   Command name formats: \[action letter]alias
+%   Example: \reviewer[EP]{edu}[orange!60] ==> \aedu, \dedu, \redu, \edu, \iedu, \medu, \hedu, \xedu
+\newcommandx{\reviewer}[3][1=,3=\@noteColor]{%
+    \colorlet{#2Color}{#3}%  % color name format: [alias]Color
+    \expandafter\def\csname a#2\endcsname##1{\add[#1]{##1}[#3]}%               % add
+    \expandafter\def\csname d#2\endcsname##1{\delete[#1]{##1}[#3]}%            % delete
+    \expandafter\def\csname r#2\endcsname##1##2{\replace[#1]{##1}{##2}[#3]}%   % replace
+    \expandafter\def\csname #2\endcsname##1{\note[#1]{##1}[#3]}%               % regular
+    \expandafter\def\csname i#2\endcsname##1{\inote[#1]{##1}[#2Color]}%        % inline
+    \expandafter\def\csname m#2\endcsname##1{\mnote[#1]{##1}[#3]}%             % margin
+    \expandafter\def\csname h#2\endcsname##1##2{\hnote[#1]{##1}{##2}[#3]}%     % highlight margin
+    \expandafter\def\csname x#2\endcsname##1{\response[#1]{##1}}%              % response
+}
+
+
+\endinput % end document class

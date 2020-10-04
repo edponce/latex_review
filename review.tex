@@ -1,0 +1,137 @@
+\documentclass{ltxdockit}[2010/09/26]
+\usepackage[utf8]{inputenc}
+\usepackage[american]{babel}
+
+
+\newcommand*\review{\sty{review}}
+
+\titlepage{%
+    title={The \review Package},
+    subtitle={A \LaTeX\ Document Revision Package},
+    url={http://www.ctan.org/pkg/review},
+    author={Eduardo Ponce},
+    email={edponce00@hotmail.com},
+    revision={v1.0},
+    date={2020/10/04}
+}
+
+\hypersetup{%
+    pdftitle={The review Package},
+    pdfsubject={A LaTeX Document Revision Package},
+    pdfauthor={Eduardo Ponce},
+    pdfkeywords={tex, latex, package, review, comments},
+    pdfborder=0 0 0,
+    pdfpagelayout=SinglePage,
+    bookmarksnumbered=true,
+    bookmarksopen=true,
+    plainpages=false,
+    colorlinks=true,
+    linktoc=all
+}
+
+
+\begin{document}
+
+
+\printtitlepage
+\tableofcontents
+
+
+\section{Introduction}
+\label{intro}
+
+The purpose of \review is simplify the revision and editing process when
+working on a manuscript. There are several CTAN packages that provide similar
+and related functionalities. We list these packages along with their
+advantages and limitations compared to \review.
+
+\begin{itemize}
+\item https://www.ctan.org/pkg/changes
+\item https://www.ctan.org/pkg/easyreview
+\item https://www.ctan.org/pkg/minorrevision
+\item https://www.ctan.org/pkg/ed
+\item https://www.ctan.org/pkg/todonotes
+\item https://www.ctan.org/pkg/fixmetodonotes
+\item https://www.ctan.org/pkg/proofread
+\end{itemize}
+
+\subsection{About \review}
+\label{about}
+
+The \review\ package ...
+
+
+\subsection{License}
+\label{license}
+
+
+\section{User Commands} \label{user}
+
+
+\subsection{Definitions}
+\label{user:def}
+
+The following set of definitions make use of two optional parameters.
+The optional \prm{ID} represents a unique user-defined identifier associated
+with the reviewer suggesting the change. It is recommended to use a short
+\prm{ID} such as the name initials in uppercase form. If no \prm{ID} is
+provided then the change will not have a corresponding reviewer. The optional
+\prm{color} is used to for coloring the changes in the text and the reviewr
+\prm{ID}. The default color for is red.
+
+\begin{ltxsyntax}
+
+\cmditem{add}[ID]{text}[color]
+
+Change that adds \prm{text} to the document.
+
+\cmditem{delete}[ID]{text}[color]
+
+Tags the selected text for removal.
+
+\cmditem{replace}[ID]{old text}{new text}[color]
+
+Change the replaces \prm{old text} with \prm{new text}.
+
+\cmditem{note}[ID]{text}[color][options for \\todo macro]
+
+The note command represents a regular note which uses a standalone box to place
+the \prm{text}. Regular notes can be placed before/after paragraphs or inlined
+with text. A regular box creates a new paragraph, so it appears by itself in
+the current textwidth. Regular notes support responses as part of the
+\prm{text} via the response command.
+
+\cmditem{note}[ID]{text}[color]
+
+\end{ltxsyntax}
+
+
+\section{Reporting Issues}
+
+The development code for \review is hosted on Github (provide url). This is the best place to log any
+issues with the package.
+
+
+\section{Revision History}
+
+This revision history is a list of changes relevant to users of this package.
+Changes of a more technical nature which do not affect the user interface or
+the behavior of the package are not included in the list. If an entry in the
+revision history states that a feature has been \emph{improved} or
+\emph{extended}, this indicates a syntactically backwards compatible
+modification, such as the addition of an optional argument to an existing
+command. Entries stating that a feature has been \emph{modified} demand
+attention. They indicate a modification which may require changes to existing
+documents in some, hopefully rare, cases. The numbers on the right indicate the
+relevant section of this manual.
+
+\begin{changelog}
+
+\begin{release}{1.0}{2020-10-04}
+\item Initial public release
+\end{release}
+
+\end{changelog}
+
+
+\end{document}
